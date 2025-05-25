@@ -1,45 +1,63 @@
+
 package com.example.azterketa.views
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.core.content.ContextCompat
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
+import com.example.azterketa.R
 import com.example.azterketa.databinding.ActivityMainBinding
-import com.example.azterketa.viewmodels.MainViewModel
-import com.example.azterketa.views.adapters.PersonajeAdapter
+import com.example.azterketa.utils.LanguageHelper
+import com.example.azterketa.utils.NotificationHelper
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var viewModel: MainViewModel
-    private lateinit var adapter: PersonajeAdapter
+    private lateinit var notificationHelper: NotificationHelper
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            notificationHelper.showNotification(
+                "Permisos", "Notificaciones habilitadas"
+            )
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Configurar idioma
+        LanguageHelper.setLocale(this, LanguageHelper.getCurrentLanguage(this))
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        notificationHelper = NotificationHelper(this)
+        requestNotificationPermissions()
+        setupNavigation()
+    }
 
-        setupRecyclerView()
-        viewModel.obtenerPersonajes()
-        viewModel.listaPersonajes.observe(this) {
-            adapter.listaPersonajes = it
-            adapter.notifyDataSetChanged()
-        }
-
-        binding.tilBuscar.setEndIconOnClickListener {
-            if (binding.tietBuscar.text.toString() == "") {
-                viewModel.obtenerPersonajes()
-            } else {
-                viewModel.obtenerPersonaje(binding.tietBuscar.text.toString().trim())
+    private fun requestNotificationPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this, android.Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
 
-    private fun setupRecyclerView() {
-        binding.rvPersonajes.layoutManager = GridLayoutManager(this, 3)
-        adapter = PersonajeAdapter(this, arrayListOf())
-        binding.rvPersonajes.adapter = adapter
+    private fun setupNavigation() {
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navController = navHostFragment.navController
+
+        binding.bottomNavigation.setupWithNavController(navController)
     }
 }

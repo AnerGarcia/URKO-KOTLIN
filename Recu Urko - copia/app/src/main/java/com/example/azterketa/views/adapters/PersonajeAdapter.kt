@@ -1,59 +1,76 @@
+
 package com.example.azterketa.views.adapters
+
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
-import androidx.cardview.widget.CardView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.azterketa.R
-import com.example.azterketa.models.Personaje
+import com.example.azterketa.database.PersonajeEntity
+import com.example.azterketa.databinding.ItemRvPersonajeBinding
 import com.google.android.material.bottomsheet.BottomSheetDialog
 
-
 class PersonajeAdapter(
-    val context: Context,
-    var listaPersonajes: List<Personaje>
-): RecyclerView.Adapter<PersonajeAdapter.ViewHolder>() {
+    private val context: Context,
+    private val onFavoritoClick: (PersonajeEntity) -> Unit
+) : ListAdapter<PersonajeEntity, PersonajeAdapter.ViewHolder>(PersonajeDiffCallback()) {
 
-    class ViewHolder(item: View): RecyclerView.ViewHolder(item) {
-        val cvPersonaje=item.findViewById(R.id.cvPersonaje) as CardView
-        val ivPersonaje=item.findViewById(R.id.ivPersonaje) as ImageView
-        val tvNomPersonaje=item.findViewById(R.id.tvNomPersonaje) as TextView
-    }
+    class ViewHolder(private val binding: ItemRvPersonajeBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val vista = LayoutInflater.from(parent.context).inflate(R.layout.item_rv_personaje, parent,false)
-        return ViewHolder(vista)
-    }
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val personaje = listaPersonajes[position]
+        fun bind(personaje: PersonajeEntity, onFavoritoClick: (PersonajeEntity) -> Unit) {
+            binding.tvNomPersonaje.text = personaje.personaje
 
-        Glide
-            .with(context)
-            .load(personaje.imagen)
-            .centerInside()
-            .into(holder.ivPersonaje)
+            Glide.with(binding.root.context)
+                .load(personaje.imagen)
+                .centerInside()
+                .into(binding.ivPersonaje)
 
-        holder.tvNomPersonaje.text = personaje.personaje
+            binding.ivFavorito.setImageResource(
+                if (personaje.esFavorito) R.drawable.ic_favorite_filled
+                else R.drawable.ic_favorite_border
+            )
 
-        holder.cvPersonaje.setOnClickListener { v: View ->
-            mostrarFrase(personaje.frase)
+            binding.cvPersonaje.setOnClickListener {
+                mostrarFrase(personaje.frase)
+            }
+
+            binding.ivFavorito.setOnClickListener {
+                onFavoritoClick(personaje)
+            }
+        }
+
+        private fun mostrarFrase(frase: String) {
+            val bottomSheetDialog = BottomSheetDialog(binding.root.context)
+            bottomSheetDialog.setContentView(R.layout.bottom_sheet_dialog_frase)
+
+            val tvFrase = bottomSheetDialog.findViewById<android.widget.TextView>(R.id.tvFrase)
+            tvFrase?.text = frase
+            bottomSheetDialog.show()
         }
     }
 
-    override fun getItemCount(): Int {
-        return listaPersonajes.size
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = ItemRvPersonajeBinding.inflate(
+            LayoutInflater.from(parent.context), parent, false
+        )
+        return ViewHolder(binding)
     }
 
-    fun mostrarFrase(frase: String) {
-        val bottomSheetDialog = BottomSheetDialog(context)
-        bottomSheetDialog.setContentView(R.layout.bottom_sheet_dialog_frase)
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        holder.bind(getItem(position), onFavoritoClick)
+    }
+}
 
-        val tvFrase= bottomSheetDialog.findViewById<TextView>(R.id.tvFrase)
-        tvFrase!!.text= frase
-        bottomSheetDialog.show()
+class PersonajeDiffCallback : DiffUtil.ItemCallback<PersonajeEntity>() {
+    override fun areItemsTheSame(oldItem: PersonajeEntity, newItem: PersonajeEntity): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: PersonajeEntity, newItem: PersonajeEntity): Boolean {
+        return oldItem == newItem
     }
 }
