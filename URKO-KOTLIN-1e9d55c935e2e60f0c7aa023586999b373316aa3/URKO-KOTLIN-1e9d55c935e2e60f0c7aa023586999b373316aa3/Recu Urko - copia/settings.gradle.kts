@@ -3,18 +3,22 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-        maven { url = uri("https://jitpack.io") } // En caso de que uses alguna lib de GitHub también
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
+// Configuración de catálogo de versiones
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://jitpack.io") } // Añadir aquí también
+    }
+    versionCatalogs {
+        create("libs") {
+            from(files("gradle/libs.versions.toml"))
+        }
     }
 }
 
-rootProject.name = "Azterketa"
-include(":app")
+rootProject.name = "Recu-Urko"
+include("app")
