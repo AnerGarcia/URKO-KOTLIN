@@ -1,0 +1,27 @@
+R_DEF: Internal format may change without notice
+local
+color amarillo
+color black
+color white
+drawable bordes_inferiores_redondeados
+drawable bordes_superiores_redondeados
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+drawable icon_buscar
+id cvPersonaje
+id ivPersonaje
+id rvPersonajes
+id tietBuscar
+id tilBuscar
+id tvFrase
+id tvNomPersonaje
+layout activity_main
+layout bottom_sheet_dialog_frase
+layout item_rv_personaje
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+style Base.Theme.Azterketa
+style Theme.Azterketa
+xml backup_rules
+xml data_extraction_rules

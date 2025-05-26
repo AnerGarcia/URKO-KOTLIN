@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".views.MainActivity">
+
+    <!-- Contenedor del buscador con fondo redondeado -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bordes_inferiores_redondeados"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <!-- TextInputLayout con icono al final para buscar -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilBuscar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:boxBackgroundMode="filled"
+            app:endIconMode="custom"
+            app:endIconCheckable="true"
+            app:endIconDrawable="@drawable/icon_buscar">
+
+            <!-- Campo de texto para introducir el nombre del personaje -->
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/tietBuscar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Personaje"
+                android:imeOptions="actionDone"
+                android:inputType="text"
+                android:layout_margin="8dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+    <!-- RecyclerView para mostrar la lista de personajes -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvPersonajes"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="8dp"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="30"
+        tools:listitem="@layout/item_rv_personaje"/>
+</LinearLayout>

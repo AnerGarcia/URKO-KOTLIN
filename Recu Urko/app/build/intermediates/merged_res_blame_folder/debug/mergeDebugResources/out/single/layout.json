@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.example.azterketa.app-mergeDebugResources-35:/layout/bottom_sheet_dialog_frase.xml",
+        "source": "com.example.azterketa.app-main-38:/layout/bottom_sheet_dialog_frase.xml"
+    },
+    {
+        "merged": "com.example.azterketa.app-mergeDebugResources-35:/layout/item_rv_personaje.xml",
+        "source": "com.example.azterketa.app-main-38:/layout/item_rv_personaje.xml"
+    },
+    {
+        "merged": "com.example.azterketa.app-mergeDebugResources-35:/layout/activity_main.xml",
+        "source": "com.example.azterketa.app-main-38:/layout/activity_main.xml"
+    }
+]
