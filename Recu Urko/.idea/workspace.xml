@@ -26,9 +26,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9598cda9-836a-42b1-b047-85975b7b64cc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-    </list>
+    <list default="true" id="9598cda9-836a-42b1-b047-85975b7b64cc" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -134,7 +132,7 @@
     "com.google.services.firebase.aqiPopupShown": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/Administrador/Desktop/URKO-KOTLIN/Recu Urko",
+    "last_opened_file_path": "C:/Users/Administrador/Desktop/URKO-KOTLIN/Recu Urko - copia",
     "settings.editor.selected.configurable": "experimental"
   }
 }]]></component>
