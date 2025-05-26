@@ -3,6 +3,8 @@ package com.example.azterketa.views
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -25,137 +27,128 @@ class LoginActivity : AppCompatActivity() {
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
-            account.idToken?.let { idToken ->
-                authViewModel.signInWithGoogle(idToken)
-            }
+            account.idToken?.let { authViewModel.signInWithGoogle(it) }
         } catch (e: ApiException) {
-            Toast.makeText(this, "Error en Google Sign In: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                getString(R.string.error_google_signin, e.message),
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Configurar idioma
+        // 1. Idioma
         LanguageHelper.setLocale(this, LanguageHelper.getCurrentLanguage(this))
 
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 2. Saltar si ya logueado
         if (authViewModel.isUserLoggedIn()) {
-            navigateToMain()
+            goToMain()
             return
         }
 
-        setupViews()
+        setupLanguageSpinner()
+        setupAuthProviderSwitch()
+        setupButtons()
         observeViewModel()
     }
 
-    private fun setupViews() {
-        binding.btnLogin.setOnClickListener {
-            val email = binding.etEmail.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
-
-            if (validateInput(email, password)) {
-                val useSupabase = binding.switchAuthProvider.isChecked
-                authViewModel.loginWithEmail(email, password, useSupabase)
-            }
-        }
-
-        binding.btnRegister.setOnClickListener {
-            val intent = Intent(this, RegisterActivity::class.java)
-            startActivity(intent)
-        }
-
-        binding.btnGoogleSignIn.setOnClickListener {
-            val signInIntent = authViewModel.googleSignInClient.signInIntent
-            googleSignInLauncher.launch(signInIntent)
-        }
-
-        binding.switchAuthProvider.setOnCheckedChangeListener { _, isChecked ->
-            binding.tvAuthProvider.text = if (isChecked) "Supabase" else "Firebase"
-        }
-
-        // Selector de idioma
-        binding.spinnerLanguage.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val languages = LanguageHelper.getAvailableLanguages()
-                val selectedLanguage = languages[position].first
-                if (selectedLanguage != LanguageHelper.getCurrentLanguage(this@LoginActivity)) {
-                    LanguageHelper.setLocale(this@LoginActivity, selectedLanguage)
+    private fun setupLanguageSpinner() {
+        val langs = LanguageHelper.getAvailableLanguages()
+        val names = langs.map { it.second }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, names)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerLanguage.adapter = adapter
+        val current = LanguageHelper.getCurrentLanguage(this)
+        binding.spinnerLanguage.setSelection(langs.indexOfFirst { it.first == current })
+        binding.spinnerLanguage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
+                val sel = langs[pos].first
+                if (sel != LanguageHelper.getCurrentLanguage(this@LoginActivity)) {
+                    LanguageHelper.setLocale(this@LoginActivity, sel)
                     recreate()
                 }
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-        })
-
-        setupLanguageSpinner()
+            override fun onNothingSelected(parent: AdapterView<*>) = Unit
+        }
     }
 
-    private fun setupLanguageSpinner() {
-        val languages = LanguageHelper.getAvailableLanguages()
-        val languageNames = languages.map { it.second }
-        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_item, languageNames)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerLanguage.adapter = adapter
+    private fun setupAuthProviderSwitch() {
+        binding.switchAuthProvider.setOnCheckedChangeListener { _, isSupabase ->
+            binding.tvAuthProvider.text = if (isSupabase) "Supabase" else "Firebase"
+        }
+    }
 
-        // Seleccionar idioma actual
-        val currentLanguage = LanguageHelper.getCurrentLanguage(this)
-        val currentIndex = languages.indexOfFirst { it.first == currentLanguage }
-        if (currentIndex != -1) {
-            binding.spinnerLanguage.setSelection(currentIndex)
+    private fun setupButtons() {
+        binding.btnLogin.setOnClickListener {
+            val email = binding.etEmail.text.toString().trim()
+            val pass  = binding.etPassword.text.toString().trim()
+            if (!validateInput(email, pass)) return@setOnClickListener
+            authViewModel.loginWithEmail(email, pass, binding.switchAuthProvider.isChecked)
+        }
+
+        binding.btnRegister.setOnClickListener {
+            startActivity(Intent(this, RegisterActivity::class.java))
+        }
+
+        binding.btnGoogleSignIn.setOnClickListener {
+            googleSignInLauncher.launch(authViewModel.googleSignInClient.signInIntent)
+        }
+
+        binding.tvForgotPassword.setOnClickListener {
+            // Implementa reset de contraseña si quieres
+            Toast.makeText(this, R.string.feature_coming_soon, Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun observeViewModel() {
-        authViewModel.loading.observe(this) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            binding.btnLogin.isEnabled = !isLoading
-            binding.btnGoogleSignIn.isEnabled = !isLoading
+        authViewModel.loading.observe(this) { loading ->
+            binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+            binding.btnLogin.isEnabled = !loading
+            binding.btnGoogleSignIn.isEnabled = !loading
         }
 
-        authViewModel.error.observe(this) { error ->
-            error?.let {
+        authViewModel.error.observe(this) { err ->
+            err?.let {
                 Toast.makeText(this, it, Toast.LENGTH_LONG).show()
                 authViewModel.clearError()
             }
         }
 
         authViewModel.authSuccess.observe(this) { success ->
-            if (success) {
-                navigateToMain()
-            }
+            if (success) goToMain()
         }
     }
 
-    private fun validateInput(email: String, password: String): Boolean {
+    private fun validateInput(email: String, pass: String): Boolean {
+        var ok = true
         if (email.isEmpty()) {
             binding.etEmail.error = getString(R.string.error_email_required)
-            return false
-        }
-
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            ok = false
+        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             binding.etEmail.error = getString(R.string.error_email_invalid)
-            return false
+            ok = false
         }
-
-        if (password.isEmpty()) {
+        if (pass.isEmpty()) {
             binding.etPassword.error = getString(R.string.error_password_required)
-            return false
-        }
-
-        if (password.length < 6) {
+            ok = false
+        } else if (pass.length < 6) {
             binding.etPassword.error = getString(R.string.error_password_short)
-            return false
+            ok = false
         }
-
-        return true
+        return ok
     }
 
-    private fun navigateToMain() {
-        val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
+    private fun goToMain() {
+        Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(this)
+        }
         finish()
     }
 }
