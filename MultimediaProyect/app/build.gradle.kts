@@ -1,3 +1,5 @@
+// app/build.gradle.kts
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -29,6 +31,7 @@ android {
         debug {
             isDebuggable = true
             applicationIdSuffix = ".debug"
+            // matchingFallbacks += listOf("release")  // opcional, usar cliente release si no existiera el debug
         }
     }
 
@@ -41,7 +44,6 @@ android {
         jvmTarget = "11"
     }
 
-    // Habilitar ViewBinding
     buildFeatures {
         viewBinding = true
         buildConfig = true
@@ -55,17 +57,15 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // Firebase Dependencies - Versiones actualizadas y compatibles
-    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
+    // — Firebase BOM actualizado para incluir App Check SafeNet —
+    implementation(platform("com.google.firebase:firebase-bom:35.0.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-appcheck-safetynet") // versión tomada del BOM
 
-    // Play Services para mejor compatibilidad con reCAPTCHA
+    // Play Services para reCAPTCHA / SafeNet
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("com.google.android.gms:play-services-safetynet:18.1.0")
-
-    // Firebase App Check para producción (opcional pero recomendado)
-    implementation("com.google.firebase:firebase-appcheck-safetynet")
 
     // MVVM Architecture Components
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
