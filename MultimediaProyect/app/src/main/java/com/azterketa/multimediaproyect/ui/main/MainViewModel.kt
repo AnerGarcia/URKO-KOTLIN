@@ -3,11 +3,13 @@ package com.azterketa.multimediaproyect.ui.main
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.azterketa.multimediaproyect.ui.auth.AuthManager
+import androidx.lifecycle.viewModelScope
+import com.azterketa.multimediaproyect.data.repository.AuthRepository
+import kotlinx.coroutines.launch
 
 class MainViewModel : ViewModel() {
 
-    private val authManager = AuthManager()
+    private val authRepository = AuthRepository()
 
     private val _currentUser = MutableLiveData<UserInfo?>()
     val currentUser: LiveData<UserInfo?> = _currentUser
@@ -15,52 +17,38 @@ class MainViewModel : ViewModel() {
     private val _signOutResult = MutableLiveData<Boolean>()
     val signOutResult: LiveData<Boolean> = _signOutResult
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
-
-    init {
-        loadCurrentUser()
-    }
-
-    private fun loadCurrentUser() {
-        val user = authManager.getCurrentUser()
-        if (user != null) {
-            _currentUser.value = UserInfo(
-                uid = user.uid,
-                email = user.email ?: "",
-                displayName = user.displayName,
-                photoUrl = user.photoUrl?.toString()
-            )
-        } else {
-            _currentUser.value = null
+    fun loadCurrentUser() {
+        viewModelScope.launch {
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                _currentUser.value = UserInfo(
+                    uid = user.id,
+                    email = user.email,
+                    displayName = user.displayName
+                )
+            } else {
+                _currentUser.value = null
+            }
         }
     }
 
-    fun signOut() {
-        _isLoading.value = true
+    suspend fun signOut() {
         try {
-            authManager.signOut()
+            authRepository.signOut()
             _currentUser.value = null
             _signOutResult.value = true
         } catch (e: Exception) {
             _signOutResult.value = false
-        } finally {
-            _isLoading.value = false
         }
     }
 
-    fun refreshUser() {
-        loadCurrentUser()
-    }
-
     fun isUserLoggedIn(): Boolean {
-        return authManager.isLoggedIn()
+        return authRepository.isUserLoggedIn()
     }
 
     data class UserInfo(
         val uid: String,
         val email: String,
-        val displayName: String?,
-        val photoUrl: String?
+        val displayName: String?
     )
 }

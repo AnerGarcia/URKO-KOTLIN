@@ -6,29 +6,34 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.azterketa.multimediaproyect.R
-import com.azterketa.multimediaproyect.auth.AuthManager
 import com.azterketa.multimediaproyect.databinding.ActivityMainBinding
 import com.azterketa.multimediaproyect.ui.auth.login.LoginActivity
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val authManager = AuthManager()
+    private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+
         // Verificar si hay usuario logueado
-        if (!authManager.isLoggedIn()) {
+        if (!viewModel.isUserLoggedIn()) {
             goToLogin()
             return
         }
 
         setupToolbar()
-        showUserInfo()
+        setupObservers()
+        viewModel.loadCurrentUser()
     }
 
     private fun setupToolbar() {
@@ -36,16 +41,23 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.title = "Multimedia Project"
     }
 
-    private fun showUserInfo() {
-        val user = authManager.getCurrentUser()
-        user?.let {
-            binding.tvWelcome.text = "¡Bienvenido!"
-            binding.tvUserEmail.text = it.email ?: "Sin email"
+    private fun setupObservers() {
+        viewModel.currentUser.observe(this) { user ->
+            user?.let {
+                binding.tvWelcome.text = if (!it.displayName.isNullOrEmpty()) {
+                    "¡Bienvenido, ${it.displayName}!"
+                } else {
+                    "¡Bienvenido!"
+                }
+                binding.tvUserEmail.text = it.email
+            }
+        }
 
-            // Mostrar nombre si está disponible
-            val displayName = it.userMetadata?.get("display_name")?.toString()
-            if (!displayName.isNullOrEmpty()) {
-                binding.tvWelcome.text = "¡Bienvenido, $displayName!"
+        viewModel.signOutResult.observe(this) { success ->
+            if (success) {
+                goToLogin()
+            } else {
+                Toast.makeText(this, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -58,12 +70,8 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_sign_out -> {
-                authManager.signOut { success, error ->
-                    if (success) {
-                        goToLogin()
-                    } else {
-                        Toast.makeText(this, "Error al cerrar sesión: $error", Toast.LENGTH_SHORT).show()
-                    }
+                lifecycleScope.launch {
+                    viewModel.signOut()
                 }
                 true
             }

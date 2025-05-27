@@ -1,41 +1,22 @@
 package com.azterketa.multimediaproyect.data.repository
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.util.Log
 import com.azterketa.multimediaproyect.data.config.SupabaseConfig
 import com.azterketa.multimediaproyect.data.model.AuthResult
 import com.azterketa.multimediaproyect.data.model.User
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
-import io.github.jan.supabase.gotrue.user.UserInfo
-import kotlinx.coroutines.delay
-import java.net.UnknownHostException
 
-class AuthRepository(private val context: Context? = null) {
+class AuthRepository {
     private val supabase = SupabaseConfig.client
 
     companion object {
         private const val TAG = "AuthRepository"
-        private const val MAX_RETRY_ATTEMPTS = 3
-        private const val RETRY_DELAY_MS = 2000L
     }
 
     suspend fun login(email: String, password: String): AuthResult {
-        return executeWithRetry {
-            performLogin(email, password)
-        }
-    }
-
-    private suspend fun performLogin(email: String, password: String): AuthResult {
         return try {
-            Log.d(TAG, "Intentando iniciar sesión para: $email")
-
-            // Verificar conectividad
-            if (!isNetworkAvailable()) {
-                return AuthResult.Error("Sin conexión a internet. Verifica tu conexión")
-            }
+            Log.d(TAG, "Intentando login para: $email")
 
             supabase.auth.signInWith(Email) {
                 this.email = email
@@ -44,15 +25,13 @@ class AuthRepository(private val context: Context? = null) {
 
             val userInfo = supabase.auth.currentUserOrNull()
             if (userInfo != null) {
-                Log.d(TAG, "Login exitoso para usuario: ${userInfo.id}")
-
                 val user = User(
                     id = userInfo.id,
                     email = userInfo.email ?: "",
                     displayName = userInfo.userMetadata?.get("display_name")?.toString(),
-                    avatarUrl = userInfo.userMetadata?.get("avatar_url")?.toString(),
                     createdAt = userInfo.createdAt
                 )
+                Log.d(TAG, "Login exitoso para: ${user.email}")
                 AuthResult.Success(user)
             } else {
                 Log.e(TAG, "Usuario nulo después del login")
@@ -60,45 +39,36 @@ class AuthRepository(private val context: Context? = null) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en login", e)
-            handleException(e)
+            val errorMessage = when {
+                e.message?.contains("Invalid login credentials", ignoreCase = true) == true ->
+                    "Email o contraseña incorrectos"
+                e.message?.contains("network", ignoreCase = true) == true ->
+                    "Error de conexión. Verifica tu internet"
+                else -> "Error de autenticación: ${e.message}"
+            }
+            AuthResult.Error(errorMessage)
         }
     }
 
     suspend fun register(email: String, password: String, displayName: String): AuthResult {
-        return executeWithRetry {
-            performRegister(email, password, displayName)
-        }
-    }
-
-    private suspend fun performRegister(email: String, password: String, displayName: String): AuthResult {
         return try {
-            Log.d(TAG, "Intentando registrar usuario: $email")
-
-            // Verificar conectividad
-            if (!isNetworkAvailable()) {
-                return AuthResult.Error("Sin conexión a internet. Verifica tu conexión")
-            }
+            Log.d(TAG, "Intentando registro para: $email")
 
             supabase.auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
-                data = mapOf(
-                    "display_name" to displayName
-                )
+                data = mapOf("display_name" to displayName)
             }
 
             val userInfo = supabase.auth.currentUserOrNull()
-
             if (userInfo != null) {
-                Log.d(TAG, "Usuario registrado exitosamente: ${userInfo.id}")
-
                 val user = User(
                     id = userInfo.id,
                     email = userInfo.email ?: "",
                     displayName = displayName,
                     createdAt = userInfo.createdAt
                 )
-
+                Log.d(TAG, "Registro exitoso para: ${user.email}")
                 AuthResult.Success(user)
             } else {
                 Log.e(TAG, "Usuario nulo después del registro")
@@ -106,77 +76,17 @@ class AuthRepository(private val context: Context? = null) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error en registro", e)
-            handleException(e)
-        }
-    }
-
-    private fun handleException(e: Exception): AuthResult {
-        val errorMessage = when {
-            e.message?.contains("Invalid login credentials", ignoreCase = true) == true ->
-                "Email o contraseña incorrectos"
-            e.message?.contains("User already registered", ignoreCase = true) == true ->
-                "Este email ya está registrado"
-            e.message?.contains("Password should be at least", ignoreCase = true) == true ->
-                "La contraseña debe tener al menos 6 caracteres"
-            e.message?.contains("Invalid email", ignoreCase = true) == true ->
-                "Email inválido"
-            e.message?.contains("network", ignoreCase = true) == true ->
-                "Error de conexión. Verifica tu internet"
-            e.message?.contains("timeout", ignoreCase = true) == true ->
-                "Tiempo de espera agotado. Intenta nuevamente"
-            else -> "Error de autenticación: ${e.message}"
-        }
-        return AuthResult.Error(errorMessage)
-    }
-
-    private suspend fun executeWithRetry(operation: suspend () -> AuthResult): AuthResult {
-        var lastException: Exception? = null
-
-        repeat(MAX_RETRY_ATTEMPTS) { attempt ->
-            try {
-                val result = operation()
-                if (result !is AuthResult.Error || !isRetriableError(result.message)) {
-                    return result
-                }
-                lastException = Exception(result.message)
-            } catch (e: Exception) {
-                lastException = e
-                if (!isRetriableError(e.message)) {
-                    return handleException(e)
-                }
+            val errorMessage = when {
+                e.message?.contains("User already registered", ignoreCase = true) == true ->
+                    "Este email ya está registrado"
+                e.message?.contains("Password should be at least", ignoreCase = true) == true ->
+                    "La contraseña debe tener al menos 6 caracteres"
+                e.message?.contains("Invalid email", ignoreCase = true) == true ->
+                    "Email inválido"
+                else -> "Error al crear la cuenta: ${e.message}"
             }
-
-            if (attempt < MAX_RETRY_ATTEMPTS - 1) {
-                Log.d(TAG, "Reintentando operación en ${RETRY_DELAY_MS}ms (intento ${attempt + 1})")
-                delay(RETRY_DELAY_MS)
-            }
+            AuthResult.Error(errorMessage)
         }
-
-        return AuthResult.Error(
-            lastException?.message ?: "Error después de $MAX_RETRY_ATTEMPTS intentos"
-        )
-    }
-
-    private fun isRetriableError(message: String?): Boolean {
-        return message?.let { msg ->
-            msg.contains("network", ignoreCase = true) ||
-                    msg.contains("timeout", ignoreCase = true) ||
-                    msg.contains("connection", ignoreCase = true)
-        } ?: false
-    }
-
-    private fun isNetworkAvailable(): Boolean {
-        context?.let { ctx ->
-            val connectivityManager = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            connectivityManager?.let { cm ->
-                val network = cm.activeNetwork ?: return false
-                val capabilities = cm.getNetworkCapabilities(network) ?: return false
-                return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-            }
-        }
-        return true // Asumir conectividad si no se puede verificar
     }
 
     suspend fun getCurrentUser(): User? {
@@ -187,7 +97,6 @@ class AuthRepository(private val context: Context? = null) {
                     id = userInfo.id,
                     email = userInfo.email ?: "",
                     displayName = userInfo.userMetadata?.get("display_name")?.toString(),
-                    avatarUrl = userInfo.userMetadata?.get("avatar_url")?.toString(),
                     createdAt = userInfo.createdAt
                 )
             } else {
@@ -216,7 +125,7 @@ class AuthRepository(private val context: Context? = null) {
     suspend fun sendPasswordResetEmail(email: String): AuthResult {
         return try {
             supabase.auth.resetPasswordForEmail(email)
-            AuthResult.Success(User()) // Usuario vacío para indicar éxito
+            AuthResult.Success(User()) // Usuario vacío indica éxito
         } catch (e: Exception) {
             Log.e(TAG, "Error al enviar email de recuperación", e)
             AuthResult.Error("Error al enviar email: ${e.message}")
