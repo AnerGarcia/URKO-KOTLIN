@@ -6,8 +6,8 @@ import io.github.jan.supabase.postgrest.Postgrest
 
 object SupabaseConfig {
     // TODO: Reemplaza con tus credenciales reales de Supabase
-    private const val SUPABASE_URL = "https://tu-proyecto.supabase.co"
-    private const val SUPABASE_ANON_KEY = "tu-clave-anonima-aqui"
+    private const val SUPABASE_URL = "https://ufhqzcrgqudxzhunajwc.supabase.co"
+    private const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmaHF6Y3JncXVkeHpodW5handjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4MTI3MjcsImV4cCI6MjA2MzM4ODcyN30.vAnYeex14XtlWp8TyAk5jUFQcPcjAC-odnUBbgusj5U"
 
     val client = createSupabaseClient(
         supabaseUrl = SUPABASE_URL,

@@ -1,4 +1,4 @@
-// app/build.gradle.kts
+// app/build.gradle.kts - Versión optimizada
 
 plugins {
     alias(libs.plugins.android.application)
@@ -46,21 +46,31 @@ android {
 }
 
 dependencies {
+    // Core Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // Supabase
-    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.1.3")
-    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.1.3")
-    implementation("io.ktor:ktor-client-android:2.3.4")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    // Lifecycle components (necesarios para ViewModels)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
 
-    // Coroutines
+    // Supabase (versión más reciente y estable)
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.6.0")
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.6.0")
+
+    // Cliente HTTP (necesario para Supabase)
+    implementation("io.ktor:ktor-client-android:2.3.12")
+
+    // Serialización JSON
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+    // Corrutinas
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
