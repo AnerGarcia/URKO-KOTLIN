@@ -57,6 +57,14 @@ class LoginActivity : AppCompatActivity() {
         viewModel.passwordError.observe(this) { error ->
             binding.tilPassword.error = error
         }
+
+        viewModel.resetPasswordResult.observe(this) { message ->
+            message?.let {
+                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                // Limpiar el mensaje después de mostrarlo
+                viewModel.clearErrors()
+            }
+        }
     }
 
     private fun setupListeners() {
@@ -72,7 +80,11 @@ class LoginActivity : AppCompatActivity() {
 
         binding.tvForgotPassword.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
-            viewModel.resetPassword(email)
+            if (email.isNotEmpty()) {
+                viewModel.resetPassword(email)
+            } else {
+                Toast.makeText(this, "Ingresa tu email para recuperar la contraseña", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // Limpiar errores cuando el usuario empiece a escribir
@@ -88,12 +100,23 @@ class LoginActivity : AppCompatActivity() {
     private fun showLoading(isLoading: Boolean) {
         binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.btnLogin.isEnabled = !isLoading
+        binding.btnLogin.text = if (isLoading) "Iniciando sesión..." else "Iniciar Sesión"
         binding.tvRegister.isEnabled = !isLoading
         binding.tvForgotPassword.isEnabled = !isLoading
+
+        // Deshabilitar campos durante la carga
+        binding.etEmail.isEnabled = !isLoading
+        binding.etPassword.isEnabled = !isLoading
     }
 
     private fun navigateToMain() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Limpiar errores al destruir la actividad
+        viewModel.clearErrors()
     }
 }
