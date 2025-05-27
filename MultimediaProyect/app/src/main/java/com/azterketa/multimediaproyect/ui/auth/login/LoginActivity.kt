@@ -19,7 +19,6 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inicializar ViewModel
         viewModel = ViewModelProvider(this)[LoginViewModel::class.java]
 
         // Si ya está logueado, ir a main
@@ -33,7 +32,8 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
-        viewModel.loginResult.observe(this) { state ->
+        // Observar estado del login
+        viewModel.loginState.observe(this) { state ->
             when (state) {
                 is LoginViewModel.LoginState.Loading -> {
                     showLoading(true)
@@ -50,7 +50,8 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.resetPasswordResult.observe(this) { message ->
+        // Observar resultado de recuperar contraseña
+        viewModel.resetPasswordMessage.observe(this) { message ->
             message?.let {
                 Toast.makeText(this, it, Toast.LENGTH_LONG).show()
             }
@@ -58,38 +59,49 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        // Botón de login
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
 
-            if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+            if (validateInput(email, password)) {
+                viewModel.login(email, password)
             }
-
-            viewModel.login(email, password)
         }
 
+        // Link para ir a registro
         binding.tvRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
 
-        // Si tienes un TextView para "Olvidé mi contraseña"
+        // Link para olvidé mi contraseña (si existe en tu layout)
         binding.tvForgotPassword?.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             if (email.isEmpty()) {
                 Toast.makeText(this, "Ingresa tu email primero", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+            } else {
+                viewModel.resetPassword(email)
             }
-            viewModel.resetPassword(email)
+        }
+    }
+
+    private fun validateInput(email: String, password: String): Boolean {
+        return when {
+            email.isEmpty() -> {
+                Toast.makeText(this, "Ingresa tu email", Toast.LENGTH_SHORT).show()
+                false
+            }
+            password.isEmpty() -> {
+                Toast.makeText(this, "Ingresa tu contraseña", Toast.LENGTH_SHORT).show()
+                false
+            }
+            else -> true
         }
     }
 
     private fun showLoading(isLoading: Boolean) {
         binding.btnLogin.isEnabled = !isLoading
         binding.btnLogin.text = if (isLoading) "Iniciando..." else "Iniciar Sesión"
-
-        // Deshabilitar otros campos durante la carga
         binding.etEmail.isEnabled = !isLoading
         binding.etPassword.isEnabled = !isLoading
         binding.tvRegister.isEnabled = !isLoading

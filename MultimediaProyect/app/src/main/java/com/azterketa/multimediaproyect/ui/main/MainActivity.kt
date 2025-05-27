@@ -7,11 +7,9 @@ import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import com.azterketa.multimediaproyect.R
 import com.azterketa.multimediaproyect.databinding.ActivityMainBinding
 import com.azterketa.multimediaproyect.ui.auth.login.LoginActivity
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,18 +41,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupObservers() {
         viewModel.currentUser.observe(this) { user ->
-            user?.let {
-                binding.tvWelcome.text = if (!it.displayName.isNullOrEmpty()) {
-                    "¡Bienvenido, ${it.displayName}!"
+            if (user != null) {
+                val welcomeText = if (!user.displayName.isNullOrEmpty()) {
+                    "¡Bienvenido, ${user.displayName}!"
                 } else {
                     "¡Bienvenido!"
                 }
-                binding.tvUserEmail.text = it.email
+                binding.tvWelcome.text = welcomeText
+                binding.tvUserEmail.text = user.email
             }
         }
 
-        viewModel.signOutResult.observe(this) { success ->
+        viewModel.signOutSuccess.observe(this) { success ->
             if (success) {
+                Toast.makeText(this, "Sesión cerrada", Toast.LENGTH_SHORT).show()
                 goToLogin()
             } else {
                 Toast.makeText(this, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
@@ -70,9 +70,7 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_sign_out -> {
-                lifecycleScope.launch {
-                    viewModel.signOut()
-                }
+                viewModel.signOut()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -80,7 +78,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun goToLogin() {
-        startActivity(Intent(this, LoginActivity::class.java))
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
         finish()
     }
 }

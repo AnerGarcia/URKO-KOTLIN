@@ -1,43 +1,32 @@
 package com.azterketa.multimediaproyect.ui.auth.login
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.azterketa.multimediaproyect.data.model.AuthResult
 import com.azterketa.multimediaproyect.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 
-class LoginViewModel(application: Application) : AndroidViewModel(application) {
+class LoginViewModel : ViewModel() {
 
     private val authRepository = AuthRepository()
 
-    private val _loginResult = MutableLiveData<LoginState>()
-    val loginResult: LiveData<LoginState> = _loginResult
+    private val _loginState = MutableLiveData<LoginState>()
+    val loginState: LiveData<LoginState> = _loginState
 
-    private val _resetPasswordResult = MutableLiveData<String?>()
-    val resetPasswordResult: LiveData<String?> = _resetPasswordResult
+    private val _resetPasswordMessage = MutableLiveData<String?>()
+    val resetPasswordMessage: LiveData<String?> = _resetPasswordMessage
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
-            _loginResult.value = LoginState.Loading
+            _loginState.value = LoginState.Loading
 
             val result = authRepository.login(email, password)
-            when (result) {
-                is AuthResult.Success -> {
-                    _loginResult.value = LoginState.Success(
-                        uid = result.user.id,
-                        email = result.user.email,
-                        displayName = result.user.displayName
-                    )
-                }
-                is AuthResult.Error -> {
-                    _loginResult.value = LoginState.Error(result.message)
-                }
-                is AuthResult.Loading -> {
-                    // Ya manejado arriba
-                }
+            _loginState.value = when (result) {
+                is AuthResult.Success -> LoginState.Success
+                is AuthResult.Error -> LoginState.Error(result.message)
+                is AuthResult.Loading -> LoginState.Loading
             }
         }
     }
@@ -45,31 +34,19 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     fun resetPassword(email: String) {
         viewModelScope.launch {
             val result = authRepository.sendPasswordResetEmail(email)
-            when (result) {
-                is AuthResult.Success -> {
-                    _resetPasswordResult.value = "Email de recuperación enviado"
-                }
-                is AuthResult.Error -> {
-                    _resetPasswordResult.value = result.message
-                }
-                is AuthResult.Loading -> {
-                    // No aplicable aquí
-                }
+            _resetPasswordMessage.value = when (result) {
+                is AuthResult.Success -> "Email de recuperación enviado"
+                is AuthResult.Error -> result.message
+                is AuthResult.Loading -> null
             }
         }
     }
 
-    fun isUserLoggedIn(): Boolean {
-        return authRepository.isUserLoggedIn()
-    }
+    fun isUserLoggedIn(): Boolean = authRepository.isUserLoggedIn()
 
     sealed class LoginState {
         object Loading : LoginState()
-        data class Success(
-            val uid: String,
-            val email: String,
-            val displayName: String?
-        ) : LoginState()
+        object Success : LoginState()
         data class Error(val message: String) : LoginState()
     }
 }
