@@ -1,13 +1,17 @@
 package com.azterketa.multimediaproyect.ui.auth.register
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.azterketa.multimediaproyect.data.model.AuthResult
 import com.azterketa.multimediaproyect.ui.auth.AuthManager
+import kotlinx.coroutines.launch
 
-class RegisterViewModel : ViewModel() {
+class RegisterViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val authManager = AuthManager()
+    private val authManager = AuthManager(application.applicationContext)
 
     private val _registerResult = MutableLiveData<RegisterState>()
     val registerResult: LiveData<RegisterState> = _registerResult
@@ -15,21 +19,32 @@ class RegisterViewModel : ViewModel() {
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
-    fun register(email: String, password: String, name: String) {
-        _isLoading.value = true
-        _registerResult.value = RegisterState.Loading
+    fun register(email: String, password: String, displayName: String) {
+        viewModelScope.launch {
+            _registerResult.value = RegisterState.Loading
+            _isLoading.value = true
 
-        authManager.register(email, password, name) { success, error ->
-            _isLoading.value = false
-            if (success) {
-                val user = authManager.getCurrentUser()
-                _registerResult.value = RegisterState.Success(
-                    uid = user?.uid ?: "",
-                    email = user?.email ?: "",
-                    displayName = user?.displayName ?: name
-                )
-            } else {
-                _registerResult.value = RegisterState.Error(error ?: "Error desconocido")
+            try {
+                val result = authManager.register(email, password, displayName)
+                when (result) {
+                    is AuthResult.Success -> {
+                        _registerResult.value = RegisterState.Success(
+                            uid = result.user.id,
+                            email = result.user.email,
+                            displayName = result.user.displayName ?: displayName
+                        )
+                    }
+                    is AuthResult.Error -> {
+                        _registerResult.value = RegisterState.Error(result.message)
+                    }
+                    is AuthResult.Loading -> {
+                        // Ya manejado arriba
+                    }
+                }
+            } catch (e: Exception) {
+                _registerResult.value = RegisterState.Error("Error inesperado: ${e.message}")
+            } finally {
+                _isLoading.value = false
             }
         }
     }

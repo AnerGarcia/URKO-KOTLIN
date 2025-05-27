@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.azterketa.multimediaproyect.auth.AuthManager
+import androidx.lifecycle.ViewModelProvider
 import com.azterketa.multimediaproyect.databinding.ActivityRegisterBinding
 import com.azterketa.multimediaproyect.ui.auth.login.LoginActivity
 import com.azterketa.multimediaproyect.ui.main.MainActivity
@@ -12,14 +12,18 @@ import com.azterketa.multimediaproyect.ui.main.MainActivity
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegisterBinding
-    private val authManager = AuthManager()
+    private lateinit var viewModel: RegisterViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Inicializar ViewModel
+        viewModel = ViewModelProvider(this)[RegisterViewModel::class.java]
+
         setupToolbar()
+        setupObservers()
         setupListeners()
     }
 
@@ -31,6 +35,25 @@ class RegisterActivity : AppCompatActivity() {
         }
         binding.toolbar.setNavigationOnClickListener {
             finish()
+        }
+    }
+
+    private fun setupObservers() {
+        viewModel.registerResult.observe(this) { state ->
+            when (state) {
+                is RegisterViewModel.RegisterState.Loading -> {
+                    showLoading(true)
+                }
+                is RegisterViewModel.RegisterState.Success -> {
+                    showLoading(false)
+                    Toast.makeText(this, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
+                    goToMain()
+                }
+                is RegisterViewModel.RegisterState.Error -> {
+                    showLoading(false)
+                    Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
@@ -48,7 +71,7 @@ class RegisterActivity : AppCompatActivity() {
             }
 
             if (password.length < 6) {
-                Toast.makeText(this, "Mínimo 6 caracteres", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -57,25 +80,12 @@ class RegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            showLoading(true)
-            authManager.register(email, password, displayName) { success, error ->
-                showLoading(false)
-                if (success) {
-                    Toast.makeText(this, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
-                    goToMain()
-                } else {
-                    val errorMessage = when {
-                        error?.contains("User already registered", ignoreCase = true) == true ->
-                            "Este email ya está registrado"
-                        error?.contains("Password should be at least", ignoreCase = true) == true ->
-                            "La contraseña debe tener al menos 6 caracteres"
-                        error?.contains("Invalid email", ignoreCase = true) == true ->
-                            "Email inválido"
-                        else -> "Error: $error"
-                    }
-                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
-                }
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                Toast.makeText(this, "Email inválido", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+
+            viewModel.register(email, password, displayName)
         }
 
         binding.tvLoginLink.setOnClickListener {
@@ -87,6 +97,13 @@ class RegisterActivity : AppCompatActivity() {
     private fun showLoading(isLoading: Boolean) {
         binding.btnRegister.isEnabled = !isLoading
         binding.btnRegister.text = if (isLoading) "Creando..." else "Crear Cuenta"
+
+        // Deshabilitar otros campos durante la carga
+        binding.etEmail.isEnabled = !isLoading
+        binding.etPassword.isEnabled = !isLoading
+        binding.etConfirmPassword.isEnabled = !isLoading
+        binding.etDisplayName?.isEnabled = !isLoading
+        binding.tvLoginLink.isEnabled = !isLoading
     }
 
     private fun goToMain() {
