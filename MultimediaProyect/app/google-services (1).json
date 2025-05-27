@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "951979812796",
+    "project_id": "aner-731f2",
+    "storage_bucket": "aner-731f2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:951979812796:android:a1098e866812ea9c6c2db9",
+        "android_client_info": {
+          "package_name": "com.azterketa.multimediaproyect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUeyeRI6x4XX90ox_ybHqkHjqiNh6avwY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

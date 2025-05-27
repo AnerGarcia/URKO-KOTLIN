@@ -1,4 +1,3 @@
-
 package com.example.azterketa.viewmodels
 
 import androidx.lifecycle.LiveData
@@ -19,8 +18,8 @@ class MainViewModel : ViewModel() {
     private val _loading = MutableLiveData<Boolean>()
     val loading: LiveData<Boolean> get() = _loading
 
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> get() = _error
+    private val _error = MutableLiveData<String?>()
+    val error: LiveData<String?> get() = _error
 
     init {
         obtenerPersonajes()
@@ -29,6 +28,7 @@ class MainViewModel : ViewModel() {
     fun obtenerPersonajes() {
         viewModelScope.launch {
             _loading.value = true
+            _error.value = null
             try {
                 repository.refreshPersonajes()
             } catch (e: Exception) {
@@ -47,6 +47,7 @@ class MainViewModel : ViewModel() {
 
         viewModelScope.launch {
             _loading.value = true
+            _error.value = null
             try {
                 repository.buscarPersonaje(nombre.trim())
             } catch (e: Exception) {
@@ -59,7 +60,21 @@ class MainViewModel : ViewModel() {
 
     fun toggleFavorito(personaje: PersonajeEntity) {
         viewModelScope.launch {
-            repository.toggleFavorito(personaje)
+            try {
+                repository.toggleFavorito(personaje)
+            } catch (e: Exception) {
+                _error.value = "Error al actualizar favorito: ${e.message}"
+            }
         }
+    }
+
+    fun refreshFavoritos() {
+        // Este método es llamado desde FavoritosFragment
+        // Los favoritos se actualizan automáticamente a través del LiveData
+        // No necesita implementación adicional ya que Room maneja la observación automáticamente
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }
