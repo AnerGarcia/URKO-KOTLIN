@@ -1,3 +1,42 @@
 <resources>
     <string name="app_name">MultimediaProyect</string>
+
+    <!-- Login strings -->
+    <string name="welcome">Bienvenido</string>
+    <string name="login_subtitle">Inicia sesión para continuar</string>
+    <string name="email_hint">Correo electrónico</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="login_button">Iniciar Sesión</string>
+    <string name="no_account">¿No tienes cuenta? </string>
+    <string name="register_link">Regístrate</string>
+
+    <!-- Register strings -->
+    <string name="create_account">Crear Cuenta</string>
+    <string name="join_community">Únete a nuestra comunidad</string>
+    <string name="full_name_hint">Nombre completo</string>
+    <string name="confirm_password_hint">Confirmar contraseña</string>
+    <string name="register_button">Registrarse</string>
+    <string name="have_account">¿Ya tienes cuenta? Iniciar sesión</string>
+
+    <!-- Main strings -->
+    <string name="user_welcome">¡Bienvenido!</string>
+    <string name="options_title">Opciones</string>
+    <string name="gallery_option">Galería</string>
+    <string name="camera_option">Cámara</string>
+    <string name="audio_option">Audio</string>
+    <string name="video_option">Video</string>
+    <string name="refresh_info">Actualizar información</string>
+
+    <!-- Menu strings -->
+    <string name="action_refresh">Actualizar</string>
+    <string name="action_sign_out">Cerrar sesión</string>
+
+    <!-- Content descriptions -->
+    <string name="profile_photo_desc">Foto de perfil</string>
+    <string name="logo_desc">Logo de la aplicación</string>
+    <string name="gallery_desc">Galería</string>
+    <string name="camera_desc">Cámara</string>
+    <string name="audio_desc">Audio</string>
+    <string name="video_desc">Video</string>
 </resources>
