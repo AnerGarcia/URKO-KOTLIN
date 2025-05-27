@@ -41,7 +41,7 @@ class AuthRepository {
                     email = userInfo.email ?: "",
                     displayName = userInfo.userMetadata?.get("display_name")?.toString(),
                     avatarUrl = userInfo.userMetadata?.get("avatar_url")?.toString(),
-                    createdAt = userInfo.createdAt
+                    createdAt = userInfo.createdAt.toString()
                 )
                 Log.d(TAG, "Login exitoso")
                 AuthResult.Success(user)
@@ -78,7 +78,7 @@ class AuthRepository {
                     email = userInfo.email ?: "",
                     displayName = displayName,
                     avatarUrl = userInfo.userMetadata?.get("avatar_url")?.toString(),
-                    createdAt = userInfo.createdAt
+                    createdAt = userInfo.createdAt.toString()
                 )
                 Log.d(TAG, "Registro exitoso")
                 AuthResult.Success(user)
@@ -112,7 +112,7 @@ class AuthRepository {
                     email = userInfo.email ?: "",
                     displayName = userInfo.userMetadata?.get("display_name")?.toString(),
                     avatarUrl = userInfo.userMetadata?.get("avatar_url")?.toString(),
-                    createdAt = userInfo.createdAt
+                    createdAt = userInfo.createdAt.toString()
                 )
             } else {
                 null
