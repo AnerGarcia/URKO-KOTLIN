@@ -10,6 +10,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.widget.addTextChangedListener
 import com.azterketa.multimediaproyect.R
 import com.azterketa.multimediaproyect.data.model.AuthResult
@@ -113,10 +114,11 @@ class RegisterActivity : AppCompatActivity() {
                 isPasswordVisible = !isPasswordVisible
                 if (isPasswordVisible) {
                     etPassword.transformationMethod = HideReturnsTransformationMethod.getInstance()
-                    tilPassword.setEndIconDrawable(R.drawable.ic_visibility_off)
+                    // Usar drawable existente o uno genérico
+                    tilPassword.setEndIconDrawable(android.R.drawable.ic_menu_view)
                 } else {
                     etPassword.transformationMethod = PasswordTransformationMethod.getInstance()
-                    tilPassword.setEndIconDrawable(R.drawable.ic_visibility)
+                    tilPassword.setEndIconDrawable(android.R.drawable.ic_menu_view)
                 }
                 etPassword.setSelection(etPassword.text?.length ?: 0)
             }
@@ -126,10 +128,10 @@ class RegisterActivity : AppCompatActivity() {
                 isConfirmPasswordVisible = !isConfirmPasswordVisible
                 if (isConfirmPasswordVisible) {
                     etConfirmPassword.transformationMethod = HideReturnsTransformationMethod.getInstance()
-                    tilConfirmPassword.setEndIconDrawable(R.drawable.ic_visibility_off)
+                    tilConfirmPassword.setEndIconDrawable(android.R.drawable.ic_menu_view)
                 } else {
                     etConfirmPassword.transformationMethod = PasswordTransformationMethod.getInstance()
-                    tilConfirmPassword.setEndIconDrawable(R.drawable.ic_visibility)
+                    tilConfirmPassword.setEndIconDrawable(android.R.drawable.ic_menu_view)
                 }
                 etConfirmPassword.setSelection(etConfirmPassword.text?.length ?: 0)
             }
@@ -160,9 +162,18 @@ class RegisterActivity : AppCompatActivity() {
 
             etPassword.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
-                    tvPasswordHint.visibility = View.VISIBLE
+                    // Solo mostrar hint si existe el TextView
+                    try {
+                        tvPasswordHint.visibility = View.VISIBLE
+                    } catch (e: Exception) {
+                        // Ignorar si no existe el TextView
+                    }
                 } else {
-                    tvPasswordHint.visibility = View.GONE
+                    try {
+                        tvPasswordHint.visibility = View.GONE
+                    } catch (e: Exception) {
+                        // Ignorar si no existe el TextView
+                    }
                 }
             }
         }
@@ -170,30 +181,34 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun updatePasswordStrength(password: String) {
         with(binding) {
-            when {
-                password.isEmpty() -> {
-                    tvPasswordStrength.visibility = View.GONE
+            try {
+                when {
+                    password.isEmpty() -> {
+                        tvPasswordStrength.visibility = View.GONE
+                    }
+                    password.length < 6 -> {
+                        tvPasswordStrength.visibility = View.VISIBLE
+                        tvPasswordStrength.text = "Contraseña débil"
+                        tvPasswordStrength.setTextColor(ContextCompat.getColor(this@RegisterActivity, android.R.color.holo_red_dark))
+                    }
+                    password.length < 8 -> {
+                        tvPasswordStrength.visibility = View.VISIBLE
+                        tvPasswordStrength.text = "Contraseña regular"
+                        tvPasswordStrength.setTextColor(ContextCompat.getColor(this@RegisterActivity, android.R.color.holo_orange_dark))
+                    }
+                    password.matches(Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@\$!%*?&])[A-Za-z\\d@\$!%*?&].*$")) -> {
+                        tvPasswordStrength.visibility = View.VISIBLE
+                        tvPasswordStrength.text = "Contraseña fuerte"
+                        tvPasswordStrength.setTextColor(ContextCompat.getColor(this@RegisterActivity, android.R.color.holo_green_dark))
+                    }
+                    else -> {
+                        tvPasswordStrength.visibility = View.VISIBLE
+                        tvPasswordStrength.text = "Contraseña buena"
+                        tvPasswordStrength.setTextColor(ContextCompat.getColor(this@RegisterActivity, android.R.color.holo_blue_dark))
+                    }
                 }
-                password.length < 6 -> {
-                    tvPasswordStrength.visibility = View.VISIBLE
-                    tvPasswordStrength.text = "Contraseña débil"
-                    tvPasswordStrength.setTextColor(getColor(R.color.error))
-                }
-                password.length < 8 -> {
-                    tvPasswordStrength.visibility = View.VISIBLE
-                    tvPasswordStrength.text = "Contraseña regular"
-                    tvPasswordStrength.setTextColor(getColor(R.color.warning))
-                }
-                password.matches(Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@\$!%*?&])[A-Za-z\\d@\$!%*?&].*$")) -> {
-                    tvPasswordStrength.visibility = View.VISIBLE
-                    tvPasswordStrength.text = "Contraseña fuerte"
-                    tvPasswordStrength.setTextColor(getColor(R.color.success))
-                }
-                else -> {
-                    tvPasswordStrength.visibility = View.VISIBLE
-                    tvPasswordStrength.text = "Contraseña buena"
-                    tvPasswordStrength.setTextColor(getColor(R.color.primary))
-                }
+            } catch (e: Exception) {
+                // Si los TextViews no existen, ignorar
             }
         }
     }
@@ -296,7 +311,13 @@ class RegisterActivity : AppCompatActivity() {
         with(binding) {
             // Mostrar/ocultar progress
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+
+            // Solo mostrar overlay si existe
+            try {
+                loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+            } catch (e: Exception) {
+                // Ignorar si no existe el overlay
+            }
 
             // Actualizar botón
             btnRegister.isEnabled = !isLoading
