@@ -4,12 +4,14 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">firebase.googleapis.com</domain>
-        <domain includeSubdomains="true">firebaseauth.googleapis.com</domain>
+        <domain includeSubdomains="true">firebaseapp.com</domain>
+        <domain includeSubdomains="true">googleapis.com</domain>
     </domain-config>
+
+    <!-- Para desarrollo/debug, permitir todo el tráfico HTTP -->
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system"/>
-            <certificates src="user"/>
         </trust-anchors>
     </base-config>
 </network-security-config>

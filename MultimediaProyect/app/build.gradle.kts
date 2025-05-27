@@ -3,7 +3,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("com.google.gms.google-services")
+    id("kotlinx-serialization")
 }
 
 android {
@@ -41,6 +41,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -51,8 +52,14 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // Solo Firebase Auth - sin BOM ni dependencias extras
-    implementation("com.google.firebase:firebase-auth:22.3.1")
+    // Supabase
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.1.3")
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.1.3")
+    implementation("io.ktor:ktor-client-android:2.3.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

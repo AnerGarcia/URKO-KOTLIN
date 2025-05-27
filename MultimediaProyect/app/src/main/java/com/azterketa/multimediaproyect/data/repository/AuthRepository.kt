@@ -4,43 +4,22 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
-import com.azterketa.multimediaproyect.BuildConfig
+import com.azterketa.multimediaproyect.data.config.SupabaseConfig
 import com.azterketa.multimediaproyect.data.model.AuthResult
 import com.azterketa.multimediaproyect.data.model.User
-import com.google.firebase.FirebaseNetworkException
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthException
-import com.google.firebase.auth.UserProfileChangeRequest
-import com.google.firebase.firestore.FirebaseFirestore
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.gotrue.providers.builtin.Email
+import io.github.jan.supabase.gotrue.user.UserInfo
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.tasks.await
 import java.net.UnknownHostException
 
 class AuthRepository(private val context: Context? = null) {
-    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val supabase = SupabaseConfig.client
 
     companion object {
         private const val TAG = "AuthRepository"
-        private const val USERS_COLLECTION = "users"
         private const val MAX_RETRY_ATTEMPTS = 3
         private const val RETRY_DELAY_MS = 2000L
-    }
-
-    init {
-        configureForDevelopment()
-    }
-
-    private fun configureForDevelopment() {
-        if (BuildConfig.DEBUG) {
-            try {
-                // Deshabilitar verificación de app para testing en desarrollo
-                firebaseAuth.firebaseAuthSettings.setAppVerificationDisabledForTesting(true)
-                Log.d(TAG, "App verification disabled for testing")
-            } catch (e: Exception) {
-                Log.w(TAG, "Could not disable app verification: ${e.message}")
-            }
-        }
     }
 
     suspend fun login(email: String, password: String): AuthResult {
@@ -58,41 +37,30 @@ class AuthRepository(private val context: Context? = null) {
                 return AuthResult.Error("Sin conexión a internet. Verifica tu conexión")
             }
 
-            val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
-            val firebaseUser = result.user
+            supabase.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
 
-            if (firebaseUser != null) {
-                Log.d(TAG, "Login exitoso para usuario: ${firebaseUser.uid}")
+            val userInfo = supabase.auth.currentUserOrNull()
+            if (userInfo != null) {
+                Log.d(TAG, "Login exitoso para usuario: ${userInfo.id}")
 
                 val user = User(
-                    uid = firebaseUser.uid,
-                    email = firebaseUser.email ?: "",
-                    displayName = firebaseUser.displayName,
-                    photoUrl = firebaseUser.photoUrl?.toString()
+                    id = userInfo.id,
+                    email = userInfo.email ?: "",
+                    displayName = userInfo.userMetadata?.get("display_name")?.toString(),
+                    avatarUrl = userInfo.userMetadata?.get("avatar_url")?.toString(),
+                    createdAt = userInfo.createdAt
                 )
                 AuthResult.Success(user)
             } else {
                 Log.e(TAG, "Usuario nulo después del login")
                 AuthResult.Error("Error de autenticación")
             }
-        } catch (e: FirebaseAuthException) {
-            Log.e(TAG, "Error de Firebase Auth: ${e.errorCode}", e)
-            handleFirebaseAuthException(e)
-        } catch (e: FirebaseNetworkException) {
-            Log.e(TAG, "Error de red Firebase", e)
-            AuthResult.Error("Error de conexión. Verifica tu internet y vuelve a intentar")
-        } catch (e: UnknownHostException) {
-            Log.e(TAG, "Error de red: Sin conexión a internet", e)
-            AuthResult.Error("Sin conexión a internet. Revisa tu conexión")
         } catch (e: Exception) {
-            Log.e(TAG, "Error general en login", e)
-            when {
-                e.message?.contains("network", ignoreCase = true) == true ->
-                    AuthResult.Error("Error de conexión. Verifica tu internet")
-                e.message?.contains("recaptcha", ignoreCase = true) == true ->
-                    AuthResult.Error("Error de verificación. Intenta nuevamente en unos minutos")
-                else -> AuthResult.Error("Error de conexión: ${e.message}")
-            }
+            Log.e(TAG, "Error en login", e)
+            handleException(e)
         }
     }
 
@@ -111,71 +79,51 @@ class AuthRepository(private val context: Context? = null) {
                 return AuthResult.Error("Sin conexión a internet. Verifica tu conexión")
             }
 
-            // Crear usuario con email y contraseña
-            val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
-            val firebaseUser = result.user
-
-            if (firebaseUser != null) {
-                Log.d(TAG, "Usuario creado exitosamente: ${firebaseUser.uid}")
-
-                // Actualizar el perfil con el nombre
-                val profileUpdates = UserProfileChangeRequest.Builder()
-                    .setDisplayName(displayName)
-                    .build()
-
-                firebaseUser.updateProfile(profileUpdates).await()
-
-                // Crear objeto User
-                val user = User(
-                    uid = firebaseUser.uid,
-                    email = firebaseUser.email ?: "",
-                    displayName = displayName,
-                    photoUrl = firebaseUser.photoUrl?.toString()
+            supabase.auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+                data = mapOf(
+                    "display_name" to displayName
                 )
+            }
 
-                // Guardar usuario en Firestore (opcional)
-                try {
-                    saveUserToFirestore(user)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Error al guardar en Firestore, pero registro exitoso", e)
-                }
+            val userInfo = supabase.auth.currentUserOrNull()
+
+            if (userInfo != null) {
+                Log.d(TAG, "Usuario registrado exitosamente: ${userInfo.id}")
+
+                val user = User(
+                    id = userInfo.id,
+                    email = userInfo.email ?: "",
+                    displayName = displayName,
+                    createdAt = userInfo.createdAt
+                )
 
                 AuthResult.Success(user)
             } else {
                 Log.e(TAG, "Usuario nulo después del registro")
                 AuthResult.Error("Error al crear la cuenta")
             }
-        } catch (e: FirebaseAuthException) {
-            Log.e(TAG, "Error de Firebase Auth en registro: ${e.errorCode}", e)
-            handleFirebaseAuthException(e)
-        } catch (e: FirebaseNetworkException) {
-            Log.e(TAG, "Error de red Firebase en registro", e)
-            AuthResult.Error("Error de conexión. Verifica tu internet y vuelve a intentar")
-        } catch (e: UnknownHostException) {
-            Log.e(TAG, "Error de red en registro: Sin conexión a internet", e)
-            AuthResult.Error("Sin conexión a internet. Revisa tu conexión")
         } catch (e: Exception) {
-            Log.e(TAG, "Error general en registro", e)
-            when {
-                e.message?.contains("network", ignoreCase = true) == true ->
-                    AuthResult.Error("Error de conexión. Verifica tu internet")
-                e.message?.contains("recaptcha", ignoreCase = true) == true ->
-                    AuthResult.Error("Error de verificación. Intenta nuevamente en unos minutos")
-                else -> AuthResult.Error("Error al crear cuenta: ${e.message}")
-            }
+            Log.e(TAG, "Error en registro", e)
+            handleException(e)
         }
     }
 
-    private fun handleFirebaseAuthException(e: FirebaseAuthException): AuthResult {
-        val errorMessage = when (e.errorCode) {
-            "ERROR_INVALID_EMAIL" -> "Email inválido"
-            "ERROR_WRONG_PASSWORD" -> "Contraseña incorrecta"
-            "ERROR_USER_NOT_FOUND" -> "Usuario no encontrado"
-            "ERROR_USER_DISABLED" -> "Usuario deshabilitado"
-            "ERROR_TOO_MANY_REQUESTS" -> "Demasiados intentos. Intenta más tarde"
-            "ERROR_NETWORK_REQUEST_FAILED" -> "Error de conexión. Revisa tu internet"
-            "ERROR_WEAK_PASSWORD" -> "La contraseña es muy débil"
-            "ERROR_EMAIL_ALREADY_IN_USE" -> "Este email ya está en uso"
+    private fun handleException(e: Exception): AuthResult {
+        val errorMessage = when {
+            e.message?.contains("Invalid login credentials", ignoreCase = true) == true ->
+                "Email o contraseña incorrectos"
+            e.message?.contains("User already registered", ignoreCase = true) == true ->
+                "Este email ya está registrado"
+            e.message?.contains("Password should be at least", ignoreCase = true) == true ->
+                "La contraseña debe tener al menos 6 caracteres"
+            e.message?.contains("Invalid email", ignoreCase = true) == true ->
+                "Email inválido"
+            e.message?.contains("network", ignoreCase = true) == true ->
+                "Error de conexión. Verifica tu internet"
+            e.message?.contains("timeout", ignoreCase = true) == true ->
+                "Tiempo de espera agotado. Intenta nuevamente"
             else -> "Error de autenticación: ${e.message}"
         }
         return AuthResult.Error(errorMessage)
@@ -194,7 +142,7 @@ class AuthRepository(private val context: Context? = null) {
             } catch (e: Exception) {
                 lastException = e
                 if (!isRetriableError(e.message)) {
-                    throw e
+                    return handleException(e)
                 }
             }
 
@@ -213,8 +161,7 @@ class AuthRepository(private val context: Context? = null) {
         return message?.let { msg ->
             msg.contains("network", ignoreCase = true) ||
                     msg.contains("timeout", ignoreCase = true) ||
-                    msg.contains("connection", ignoreCase = true) ||
-                    msg.contains("recaptcha", ignoreCase = true)
+                    msg.contains("connection", ignoreCase = true)
         } ?: false
     }
 
@@ -232,28 +179,16 @@ class AuthRepository(private val context: Context? = null) {
         return true // Asumir conectividad si no se puede verificar
     }
 
-    private suspend fun saveUserToFirestore(user: User) {
-        try {
-            firestore.collection(USERS_COLLECTION)
-                .document(user.uid)
-                .set(user)
-                .await()
-            Log.d(TAG, "Usuario guardado en Firestore")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al guardar en Firestore", e)
-            throw e
-        }
-    }
-
     suspend fun getCurrentUser(): User? {
         return try {
-            val firebaseUser = firebaseAuth.currentUser
-            if (firebaseUser != null) {
+            val userInfo = supabase.auth.currentUserOrNull()
+            if (userInfo != null) {
                 User(
-                    uid = firebaseUser.uid,
-                    email = firebaseUser.email ?: "",
-                    displayName = firebaseUser.displayName,
-                    photoUrl = firebaseUser.photoUrl?.toString()
+                    id = userInfo.id,
+                    email = userInfo.email ?: "",
+                    displayName = userInfo.userMetadata?.get("display_name")?.toString(),
+                    avatarUrl = userInfo.userMetadata?.get("avatar_url")?.toString(),
+                    createdAt = userInfo.createdAt
                 )
             } else {
                 null
@@ -266,7 +201,7 @@ class AuthRepository(private val context: Context? = null) {
 
     suspend fun signOut() {
         try {
-            firebaseAuth.signOut()
+            supabase.auth.signOut()
             Log.d(TAG, "Usuario desconectado exitosamente")
         } catch (e: Exception) {
             Log.e(TAG, "Error al cerrar sesión", e)
@@ -275,18 +210,15 @@ class AuthRepository(private val context: Context? = null) {
     }
 
     fun isUserLoggedIn(): Boolean {
-        return firebaseAuth.currentUser != null
+        return supabase.auth.currentUserOrNull() != null
     }
 
     suspend fun sendPasswordResetEmail(email: String): AuthResult {
         return try {
-            firebaseAuth.sendPasswordResetEmail(email).await()
+            supabase.auth.resetPasswordForEmail(email)
             AuthResult.Success(User()) // Usuario vacío para indicar éxito
-        } catch (e: FirebaseAuthException) {
-            Log.e(TAG, "Error al enviar email de recuperación: ${e.errorCode}", e)
-            handleFirebaseAuthException(e)
         } catch (e: Exception) {
-            Log.e(TAG, "Error general al enviar email de recuperación", e)
+            Log.e(TAG, "Error al enviar email de recuperación", e)
             AuthResult.Error("Error al enviar email: ${e.message}")
         }
     }

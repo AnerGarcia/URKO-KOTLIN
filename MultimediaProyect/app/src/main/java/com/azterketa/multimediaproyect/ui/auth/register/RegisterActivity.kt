@@ -39,6 +39,7 @@ class RegisterActivity : AppCompatActivity() {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
             val confirmPassword = binding.etConfirmPassword.text.toString().trim()
+            val displayName = binding.etDisplayName?.text?.toString()?.trim() ?: email.substringBefore("@")
 
             // Validaciones básicas
             if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
@@ -57,13 +58,22 @@ class RegisterActivity : AppCompatActivity() {
             }
 
             showLoading(true)
-            authManager.register(email, password) { success, error ->
+            authManager.register(email, password, displayName) { success, error ->
                 showLoading(false)
                 if (success) {
                     Toast.makeText(this, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
                     goToMain()
                 } else {
-                    Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
+                    val errorMessage = when {
+                        error?.contains("User already registered", ignoreCase = true) == true ->
+                            "Este email ya está registrado"
+                        error?.contains("Password should be at least", ignoreCase = true) == true ->
+                            "La contraseña debe tener al menos 6 caracteres"
+                        error?.contains("Invalid email", ignoreCase = true) == true ->
+                            "Email inválido"
+                        else -> "Error: $error"
+                    }
+                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
                 }
             }
         }

@@ -1,31 +1,46 @@
 package com.azterketa.multimediaproyect.ui.auth.register
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
-import com.azterketa.multimediaproyect.data.model.AuthResult
-import com.azterketa.multimediaproyect.data.repository.AuthRepository
-import kotlinx.coroutines.launch
+import androidx.lifecycle.ViewModel
+import com.azterketa.multimediaproyect.ui.auth.AuthManager
 
-class RegisterViewModel(application: Application) : AndroidViewModel(application) {
+class RegisterViewModel : ViewModel() {
 
-    private val authRepository = AuthRepository(application)
+    private val authManager = AuthManager()
 
-    private val _authResult = MutableLiveData<AuthResult>()
-    val authResult: LiveData<AuthResult> = _authResult
+    private val _registerResult = MutableLiveData<RegisterState>()
+    val registerResult: LiveData<RegisterState> = _registerResult
+
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> = _isLoading
 
     fun register(email: String, password: String, name: String) {
-        _authResult.value = AuthResult.Loading
+        _isLoading.value = true
+        _registerResult.value = RegisterState.Loading
 
-        viewModelScope.launch {
-            try {
-                val result = authRepository.register(email, password, name)
-                _authResult.value = result
-            } catch (e: Exception) {
-                _authResult.value = AuthResult.Error("Error al crear cuenta: ${e.message}")
+        authManager.register(email, password, name) { success, error ->
+            _isLoading.value = false
+            if (success) {
+                val user = authManager.getCurrentUser()
+                _registerResult.value = RegisterState.Success(
+                    uid = user?.uid ?: "",
+                    email = user?.email ?: "",
+                    displayName = user?.displayName ?: name
+                )
+            } else {
+                _registerResult.value = RegisterState.Error(error ?: "Error desconocido")
             }
         }
+    }
+
+    sealed class RegisterState {
+        object Loading : RegisterState()
+        data class Success(
+            val uid: String,
+            val email: String,
+            val displayName: String
+        ) : RegisterState()
+        data class Error(val message: String) : RegisterState()
     }
 }

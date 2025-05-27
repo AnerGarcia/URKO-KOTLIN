@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.azterketa.multimediaproyect.R
 import com.azterketa.multimediaproyect.auth.AuthManager
@@ -40,7 +41,12 @@ class MainActivity : AppCompatActivity() {
         user?.let {
             binding.tvWelcome.text = "¡Bienvenido!"
             binding.tvUserEmail.text = it.email ?: "Sin email"
-            // Mostrar más info si es necesario
+
+            // Mostrar nombre si está disponible
+            val displayName = it.userMetadata?.get("display_name")?.toString()
+            if (!displayName.isNullOrEmpty()) {
+                binding.tvWelcome.text = "¡Bienvenido, $displayName!"
+            }
         }
     }
 
@@ -52,8 +58,13 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_sign_out -> {
-                authManager.signOut()
-                goToLogin()
+                authManager.signOut { success, error ->
+                    if (success) {
+                        goToLogin()
+                    } else {
+                        Toast.makeText(this, "Error al cerrar sesión: $error", Toast.LENGTH_SHORT).show()
+                    }
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)

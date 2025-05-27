@@ -6,6 +6,16 @@
     <color name="secondary">#03DAC6</color>
     <color name="secondary_variant">#018786</color>
 
+    <!-- Colores adicionales para el tema -->
+    <color name="primary_color">#6200EE</color>
+    <color name="colorPrimary">#6200EE</color>
+    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorAccent">#03DAC6</color>
+
+    <!-- Colores para gradientes -->
+    <color name="gradient_start">#6200EE</color>
+    <color name="gradient_end">#03DAC6</color>
+
     <!-- Colores de fondo -->
     <color name="background">#FFFFFF</color>
     <color name="surface">#FFFFFF</color>
@@ -15,16 +25,39 @@
     <color name="on_secondary">#000000</color>
     <color name="on_background">#000000</color>
     <color name="on_surface">#000000</color>
+    <color name="text_primary">#000000</color>
+    <color name="text_secondary">#666666</color>
 
     <!-- Colores de estado -->
     <color name="error">#B00020</color>
     <color name="success">#4CAF50</color>
     <color name="warning">#FF9800</color>
 
-    <!-- Colores adicionales -->
+    <!-- Colores básicos -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#FF808080</color>
     <color name="light_gray">#FFE0E0E0</color>
     <color name="dark_gray">#FF404040</color>
+
+    <!-- Colores para botones y enlaces -->
+    <color name="blue_link">#2196F3</color>
+    <color name="button_primary">#6200EE</color>
+    <color name="button_secondary">#03DAC6</color>
+
+    <!-- Colores para tarjetas y elementos UI -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="ripple">#1F6200EE</color>
+
+    <!-- Colores para estados de elementos -->
+    <color name="enabled">#6200EE</color>
+    <color name="disabled">#CCCCCC</color>
+    <color name="pressed">#3700B3</color>
+    <color name="focused">#03DAC6</color>
+
+    <!-- Colores transparentes -->
+    <color name="transparent">#00000000</color>
+    <color name="semi_transparent_black">#80000000</color>
+    <color name="semi_transparent_white">#80FFFFFF</color>
 </resources>

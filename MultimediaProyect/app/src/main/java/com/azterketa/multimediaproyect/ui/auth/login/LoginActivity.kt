@@ -45,7 +45,14 @@ class LoginActivity : AppCompatActivity() {
                     Toast.makeText(this, "Login exitoso", Toast.LENGTH_SHORT).show()
                     goToMain()
                 } else {
-                    Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
+                    val errorMessage = when {
+                        error?.contains("Invalid login credentials", ignoreCase = true) == true ->
+                            "Email o contraseña incorrectos"
+                        error?.contains("Invalid email", ignoreCase = true) == true ->
+                            "Email inválido"
+                        else -> "Error: $error"
+                    }
+                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
                 }
             }
         }

@@ -1,9 +1,12 @@
 package com.azterketa.multimediaproyect.data.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class User(
-    val uid: String = "",
+    val id: String = "",
     val email: String = "",
     val displayName: String? = null,
-    val photoUrl: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val avatarUrl: String? = null,
+    val createdAt: String = ""
 )
