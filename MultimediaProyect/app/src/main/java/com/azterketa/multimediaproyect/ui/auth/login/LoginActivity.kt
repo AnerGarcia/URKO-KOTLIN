@@ -2,34 +2,30 @@ package com.azterketa.multimediaproyect.ui.auth.login
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.Toast
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.azterketa.multimediaproyect.ui.main.MainActivity
-import com.azterketa.multimediaproyect.data.model.AuthResult
+import com.azterketa.multimediaproyect.auth.AuthManager
 import com.azterketa.multimediaproyect.databinding.ActivityLoginBinding
 import com.azterketa.multimediaproyect.ui.auth.register.RegisterActivity
-import com.google.firebase.auth.FirebaseAuth
+import com.azterketa.multimediaproyect.ui.main.MainActivity
 
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLoginBinding
-    private val viewModel: LoginViewModel by viewModels()
+    private val authManager = AuthManager()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Verificar si ya hay un usuario logueado
-        if (FirebaseAuth.getInstance().currentUser != null) {
-            navigateToMain()
+        // Si ya está logueado, ir a main
+        if (authManager.isLoggedIn()) {
+            goToMain()
             return
         }
 
         setupListeners()
-        setupObservers()
     }
 
     private fun setupListeners() {
@@ -37,69 +33,34 @@ class LoginActivity : AppCompatActivity() {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
 
-            if (email.isEmpty()) {
-                binding.etEmail.error = "Email requerido"
+            if (email.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            if (password.isEmpty()) {
-                binding.etPassword.error = "Contraseña requerida"
-                return@setOnClickListener
+            showLoading(true)
+            authManager.login(email, password) { success, error ->
+                showLoading(false)
+                if (success) {
+                    Toast.makeText(this, "Login exitoso", Toast.LENGTH_SHORT).show()
+                    goToMain()
+                } else {
+                    Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
+                }
             }
-
-            viewModel.login(email, password)
         }
 
         binding.tvRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
-
-        binding.tvForgotPassword.setOnClickListener {
-            val email = binding.etEmail.text.toString().trim()
-            if (email.isEmpty()) {
-                Toast.makeText(this, "Ingresa tu email para recuperar la contraseña", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            viewModel.resetPassword(email)
-        }
-    }
-
-    private fun setupObservers() {
-        viewModel.authResult.observe(this) { result ->
-            when (result) {
-                is AuthResult.Loading -> {
-                    showLoading(true)
-                }
-                is AuthResult.Success -> {
-                    showLoading(false)
-                    Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-                    navigateToMain()
-                }
-                is AuthResult.Error -> {
-                    showLoading(false)
-                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-
-        viewModel.resetPasswordResult.observe(this) { message ->
-            message?.let {
-                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
-            }
-        }
     }
 
     private fun showLoading(isLoading: Boolean) {
-        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.btnLogin.isEnabled = !isLoading
-        binding.btnLogin.text = if (isLoading) "Iniciando sesión..." else "Iniciar Sesión"
-        binding.etEmail.isEnabled = !isLoading
-        binding.etPassword.isEnabled = !isLoading
-        binding.tvRegister.isEnabled = !isLoading
-        binding.tvForgotPassword.isEnabled = !isLoading
+        binding.btnLogin.text = if (isLoading) "Iniciando..." else "Iniciar Sesión"
     }
 
-    private fun navigateToMain() {
+    private fun goToMain() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }

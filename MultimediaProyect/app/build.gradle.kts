@@ -28,11 +28,6 @@ android {
                 "proguard-rules.pro"
             )
         }
-        debug {
-            isDebuggable = true
-            applicationIdSuffix = ".debug"
-            // matchingFallbacks += listOf("release")  // opcional, usar cliente release si no existiera el debug
-        }
     }
 
     compileOptions {
@@ -46,7 +41,6 @@ android {
 
     buildFeatures {
         viewBinding = true
-        buildConfig = true
     }
 }
 
@@ -57,33 +51,8 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // — Firebase BOM actualizado para incluir App Check SafeNet —
-    implementation(platform("com.google.firebase:firebase-bom:35.0.0"))
-    implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-appcheck-safetynet") // versión tomada del BOM
-
-    // Play Services para reCAPTCHA / SafeNet
-    implementation("com.google.android.gms:play-services-auth:21.2.0")
-    implementation("com.google.android.gms:play-services-safetynet:18.1.0")
-
-    // MVVM Architecture Components
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("androidx.activity:activity-ktx:1.9.3")
-    implementation("androidx.fragment:fragment-ktx:1.8.5")
-
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
-
-    // Image Loading - Glide
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
-
-    // Network connectivity check
-    implementation("androidx.core:core-ktx:1.15.0")
+    // Solo Firebase Auth - sin BOM ni dependencias extras
+    implementation("com.google.firebase:firebase-auth:22.3.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

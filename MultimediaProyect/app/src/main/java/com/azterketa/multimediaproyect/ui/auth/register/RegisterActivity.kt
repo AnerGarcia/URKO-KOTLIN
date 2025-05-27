@@ -2,11 +2,9 @@ package com.azterketa.multimediaproyect.ui.auth.register
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.Toast
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.azterketa.multimediaproyect.data.model.AuthResult
+import com.azterketa.multimediaproyect.auth.AuthManager
 import com.azterketa.multimediaproyect.databinding.ActivityRegisterBinding
 import com.azterketa.multimediaproyect.ui.auth.login.LoginActivity
 import com.azterketa.multimediaproyect.ui.main.MainActivity
@@ -14,7 +12,7 @@ import com.azterketa.multimediaproyect.ui.main.MainActivity
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegisterBinding
-    private val viewModel: RegisterViewModel by viewModels()
+    private val authManager = AuthManager()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,7 +21,6 @@ class RegisterActivity : AppCompatActivity() {
 
         setupToolbar()
         setupListeners()
-        setupObservers()
     }
 
     private fun setupToolbar() {
@@ -32,98 +29,60 @@ class RegisterActivity : AppCompatActivity() {
             title = "Crear Cuenta"
             setDisplayHomeAsUpEnabled(true)
         }
-
         binding.toolbar.setNavigationOnClickListener {
-            navigateToLogin()
+            finish()
         }
     }
 
     private fun setupListeners() {
         binding.btnRegister.setOnClickListener {
-            val name = binding.etName.text.toString().trim()
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
             val confirmPassword = binding.etConfirmPassword.text.toString().trim()
 
             // Validaciones básicas
-            if (name.isEmpty()) {
-                binding.etName.error = "Nombre requerido"
-                return@setOnClickListener
-            }
-
-            if (email.isEmpty()) {
-                binding.etEmail.error = "Email requerido"
-                return@setOnClickListener
-            }
-
-            if (password.isEmpty()) {
-                binding.etPassword.error = "Contraseña requerida"
+            if (email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             if (password.length < 6) {
-                binding.etPassword.error = "Mínimo 6 caracteres"
+                Toast.makeText(this, "Mínimo 6 caracteres", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             if (password != confirmPassword) {
-                binding.etConfirmPassword.error = "Las contraseñas no coinciden"
+                Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            viewModel.register(email, password, name)
+            showLoading(true)
+            authManager.register(email, password) { success, error ->
+                showLoading(false)
+                if (success) {
+                    Toast.makeText(this, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
+                    goToMain()
+                } else {
+                    Toast.makeText(this, "Error: $error", Toast.LENGTH_LONG).show()
+                }
+            }
         }
 
         binding.tvLoginLink.setOnClickListener {
-            navigateToLogin()
-        }
-    }
-
-    private fun setupObservers() {
-        viewModel.authResult.observe(this) { result ->
-            when (result) {
-                is AuthResult.Loading -> {
-                    showLoading(true)
-                }
-                is AuthResult.Success -> {
-                    showLoading(false)
-                    Toast.makeText(this, "¡Cuenta creada exitosamente!", Toast.LENGTH_SHORT).show()
-                    navigateToMain()
-                }
-                is AuthResult.Error -> {
-                    showLoading(false)
-                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
-                }
-            }
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
         }
     }
 
     private fun showLoading(isLoading: Boolean) {
-        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.btnRegister.isEnabled = !isLoading
-        binding.btnRegister.text = if (isLoading) "Creando cuenta..." else "Crear Cuenta"
-        binding.etName.isEnabled = !isLoading
-        binding.etEmail.isEnabled = !isLoading
-        binding.etPassword.isEnabled = !isLoading
-        binding.etConfirmPassword.isEnabled = !isLoading
-        binding.tvLoginLink.isEnabled = !isLoading
+        binding.btnRegister.text = if (isLoading) "Creando..." else "Crear Cuenta"
     }
 
-    private fun navigateToMain() {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
+    private fun goToMain() {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
-    }
-
-    private fun navigateToLogin() {
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        navigateToLogin()
-        return true
     }
 }
