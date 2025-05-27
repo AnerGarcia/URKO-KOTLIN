@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.azterketa.multimediaproyect.data.model.AuthResult
 import com.azterketa.multimediaproyect.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 
@@ -22,11 +21,12 @@ class LoginViewModel : ViewModel() {
         viewModelScope.launch {
             _loginState.value = LoginState.Loading
 
-            val result = authRepository.login(email, password)
-            _loginState.value = when (result) {
-                is AuthResult.Success -> LoginState.Success
-                is AuthResult.Error -> LoginState.Error(result.message)
-                is AuthResult.Loading -> LoginState.Loading
+            // authRepository.login() devuelve Boolean, no AuthResult
+            val success = authRepository.login(email, password)
+            _loginState.value = if (success) {
+                LoginState.Success
+            } else {
+                LoginState.Error("Error en el login")
             }
         }
     }
@@ -35,9 +35,9 @@ class LoginViewModel : ViewModel() {
         viewModelScope.launch {
             val result = authRepository.sendPasswordResetEmail(email)
             _resetPasswordMessage.value = when (result) {
-                is AuthResult.Success -> "Email de recuperación enviado"
-                is AuthResult.Error -> result.message
-                is AuthResult.Loading -> null
+                is com.azterketa.multimediaproyect.data.model.AuthResult.Success -> "Email de recuperación enviado"
+                is com.azterketa.multimediaproyect.data.model.AuthResult.Error -> result.message
+                is com.azterketa.multimediaproyect.data.model.AuthResult.Loading -> null
             }
         }
     }
