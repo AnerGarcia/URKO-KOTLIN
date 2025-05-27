@@ -1,98 +1,89 @@
-package com.azterketa.multimediaproyect.ui.auth.login
+package com.azterketa.multimediaproyect.ui.auth.register
 
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
-import com.azterketa.multimediaproyect.databinding.ActivityLoginBinding
-import com.azterketa.multimediaproyect.ui.auth.register.RegisterActivity
+import com.azterketa.multimediaproyect.databinding.ActivityRegisterBinding
+import com.azterketa.multimediaproyect.ui.auth.login.LoginActivity
 import com.azterketa.multimediaproyect.ui.main.MainActivity
 
-class LoginActivity : AppCompatActivity() {
+class RegisterActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityLoginBinding
-    private lateinit var viewModel: LoginViewModel
+    private lateinit var binding: ActivityRegisterBinding
+    private lateinit var viewModel: RegisterViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityLoginBinding.inflate(layoutInflater)
+        binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        viewModel = ViewModelProvider(this)[LoginViewModel::class.java]
-
-        // Si ya está logueado, ir a main
-        if (viewModel.isUserLoggedIn()) {
-            goToMain()
-            return
-        }
+        viewModel = ViewModelProvider(this)[RegisterViewModel::class.java]
 
         setupObservers()
         setupListeners()
     }
 
     private fun setupObservers() {
-        // Observar estado del login
-        viewModel.loginState.observe(this) { state ->
+        viewModel.registerState.observe(this) { state ->
             when (state) {
-                is LoginViewModel.LoginState.Loading -> {
+                is RegisterViewModel.RegisterState.Loading -> {
                     showLoading(true)
                 }
-                is LoginViewModel.LoginState.Success -> {
+                is RegisterViewModel.RegisterState.Success -> {
                     showLoading(false)
-                    Toast.makeText(this, "Login exitoso", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Registro exitoso", Toast.LENGTH_SHORT).show()
                     goToMain()
                 }
-                is LoginViewModel.LoginState.Error -> {
+                is RegisterViewModel.RegisterState.Error -> {
                     showLoading(false)
                     Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
                 }
             }
         }
-
-        // Observar resultado de recuperar contraseña
-        viewModel.resetPasswordMessage.observe(this) { message ->
-            message?.let {
-                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
-            }
-        }
     }
 
     private fun setupListeners() {
-        // Botón de login
-        binding.btnLogin.setOnClickListener {
+        // Botón de registro
+        binding.btnRegister.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
+            val confirmPassword = binding.etConfirmPassword.text.toString().trim()
+            val displayName = binding.etDisplayName.text.toString().trim()
 
-            if (validateInput(email, password)) {
-                viewModel.login(email, password)
+            if (validateInput(email, password, confirmPassword, displayName)) {
+                viewModel.register(email, password, displayName)
             }
         }
 
-        // Link para ir a registro
-        binding.tvRegister.setOnClickListener {
-            startActivity(Intent(this, RegisterActivity::class.java))
-        }
-
-        // Link para olvidé mi contraseña (si existe en tu layout)
-        binding.tvForgotPassword?.setOnClickListener {
-            val email = binding.etEmail.text.toString().trim()
-            if (email.isEmpty()) {
-                Toast.makeText(this, "Ingresa tu email primero", Toast.LENGTH_SHORT).show()
-            } else {
-                viewModel.resetPassword(email)
-            }
+        // Link para ir a login
+        binding.tvLogin.setOnClickListener {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
         }
     }
 
-    private fun validateInput(email: String, password: String): Boolean {
+    private fun validateInput(email: String, password: String, confirmPassword: String, displayName: String): Boolean {
         return when {
             email.isEmpty() -> {
                 Toast.makeText(this, "Ingresa tu email", Toast.LENGTH_SHORT).show()
                 false
             }
+            displayName.isEmpty() -> {
+                Toast.makeText(this, "Ingresa tu nombre", Toast.LENGTH_SHORT).show()
+                false
+            }
             password.isEmpty() -> {
                 Toast.makeText(this, "Ingresa tu contraseña", Toast.LENGTH_SHORT).show()
+                false
+            }
+            password.length < 6 -> {
+                Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
+                false
+            }
+            password != confirmPassword -> {
+                Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
                 false
             }
             else -> true
@@ -100,12 +91,13 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun showLoading(isLoading: Boolean) {
-        binding.btnLogin.isEnabled = !isLoading
-        binding.btnLogin.text = if (isLoading) "Iniciando..." else "Iniciar Sesión"
+        binding.btnRegister.isEnabled = !isLoading
+        binding.btnRegister.text = if (isLoading) "Registrando..." else "Registrarse"
         binding.etEmail.isEnabled = !isLoading
         binding.etPassword.isEnabled = !isLoading
-        binding.tvRegister.isEnabled = !isLoading
-        binding.tvForgotPassword?.isEnabled = !isLoading
+        binding.etConfirmPassword.isEnabled = !isLoading
+        binding.etDisplayName.isEnabled = !isLoading
+        binding.tvLogin.isEnabled = !isLoading
     }
 
     private fun goToMain() {
