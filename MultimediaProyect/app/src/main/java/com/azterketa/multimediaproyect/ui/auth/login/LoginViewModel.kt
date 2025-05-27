@@ -1,18 +1,18 @@
 package com.azterketa.multimediaproyect.ui.auth.login
 
+import android.app.Application
 import android.util.Patterns
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.azterketa.multimediaproyect.data.model.AuthResult
 import com.azterketa.multimediaproyect.data.repository.AuthRepository
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
-class LoginViewModel : ViewModel() {
+class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val authRepository = AuthRepository()
+    private val authRepository = AuthRepository(application)
 
     private val _authResult = MutableLiveData<AuthResult>()
     val authResult: LiveData<AuthResult> = _authResult
@@ -23,6 +23,9 @@ class LoginViewModel : ViewModel() {
     private val _passwordError = MutableLiveData<String?>()
     val passwordError: LiveData<String?> = _passwordError
 
+    private val _resetPasswordResult = MutableLiveData<String?>()
+    val resetPasswordResult: LiveData<String?> = _resetPasswordResult
+
     fun login(email: String, password: String) {
         if (validateInput(email, password)) {
             _authResult.value = AuthResult.Loading
@@ -32,7 +35,9 @@ class LoginViewModel : ViewModel() {
                     val result = authRepository.login(email, password)
                     _authResult.value = result
                 } catch (e: Exception) {
-                    _authResult.value = AuthResult.Error(e.message ?: "Error de conexión")
+                    _authResult.value = AuthResult.Error(
+                        "Error de conexión: ${e.message ?: "Error desconocido"}"
+                    )
                 }
             }
         }
@@ -42,16 +47,24 @@ class LoginViewModel : ViewModel() {
         if (email.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             viewModelScope.launch {
                 try {
-                    FirebaseAuth.getInstance().sendPasswordResetEmail(email)
-                    _authResult.value = AuthResult.Success(
-                        com.azterketa.multimediaproyect.data.model.User()
-                    )
+                    val result = authRepository.sendPasswordResetEmail(email)
+                    when (result) {
+                        is AuthResult.Success -> {
+                            _resetPasswordResult.value = "Se ha enviado un email de recuperación a $email"
+                        }
+                        is AuthResult.Error -> {
+                            _resetPasswordResult.value = result.message
+                        }
+                        else -> {
+                            _resetPasswordResult.value = "Error al enviar email de recuperación"
+                        }
+                    }
                 } catch (e: Exception) {
-                    _authResult.value = AuthResult.Error(e.message ?: "Error al enviar email")
+                    _resetPasswordResult.value = "Error al enviar email: ${e.message}"
                 }
             }
         } else {
-            _authResult.value = AuthResult.Error("Ingresa un email válido para recuperar tu contraseña")
+            _resetPasswordResult.value = "Ingresa un email válido para recuperar tu contraseña"
         }
     }
 
@@ -94,5 +107,6 @@ class LoginViewModel : ViewModel() {
     fun clearErrors() {
         _emailError.value = null
         _passwordError.value = null
+        _resetPasswordResult.value = null
     }
 }

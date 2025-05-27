@@ -26,6 +26,10 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+        }
     }
 
     compileOptions {
@@ -40,6 +44,7 @@ android {
     // Habilitar ViewBinding
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -50,10 +55,17 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // Firebase Dependencies
+    // Firebase Dependencies - Versiones actualizadas y compatibles
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+
+    // Play Services para mejor compatibilidad con reCAPTCHA
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation("com.google.android.gms:play-services-safetynet:18.1.0")
+
+    // Firebase App Check para producción (opcional pero recomendado)
+    implementation("com.google.firebase:firebase-appcheck-safetynet")
 
     // MVVM Architecture Components
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
@@ -69,6 +81,9 @@ dependencies {
     // Image Loading - Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // Network connectivity check
+    implementation("androidx.core:core-ktx:1.15.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
