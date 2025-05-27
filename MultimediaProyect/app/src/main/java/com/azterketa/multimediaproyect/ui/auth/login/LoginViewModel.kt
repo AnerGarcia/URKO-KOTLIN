@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.azterketa.multimediaproyect.data.model.AuthResult
 import com.azterketa.multimediaproyect.data.repository.AuthRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 class LoginViewModel : ViewModel() {
@@ -24,9 +25,14 @@ class LoginViewModel : ViewModel() {
 
     fun login(email: String, password: String) {
         if (validateInput(email, password)) {
+            _authResult.value = AuthResult.Loading
+
             viewModelScope.launch {
-                authRepository.loginUser(email, password).collect { result ->
+                try {
+                    val result = authRepository.login(email, password)
                     _authResult.value = result
+                } catch (e: Exception) {
+                    _authResult.value = AuthResult.Error(e.message ?: "Error de conexión")
                 }
             }
         }
@@ -35,8 +41,13 @@ class LoginViewModel : ViewModel() {
     fun resetPassword(email: String) {
         if (email.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             viewModelScope.launch {
-                authRepository.resetPassword(email).collect { result ->
-                    _authResult.value = result
+                try {
+                    FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                    _authResult.value = AuthResult.Success(
+                        com.azterketa.multimediaproyect.data.model.User()
+                    )
+                } catch (e: Exception) {
+                    _authResult.value = AuthResult.Error(e.message ?: "Error al enviar email")
                 }
             }
         } else {
